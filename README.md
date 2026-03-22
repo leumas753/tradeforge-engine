@@ -103,7 +103,7 @@ app/
 
 ```
 Supabase
-  └── fetch active bot_instances (status = "running")
+  └── fetch active bot_instances (status = "active")
         └── for each bot:
               1. load strategy from DB config
               2. get mock market data for the symbol
@@ -154,6 +154,68 @@ _STRATEGY_REGISTRY["my-strategy"] = MyStrategy
 ```
 
 4. Set `config.type = "my-strategy"` on a strategy row in Supabase
+
+---
+
+## Deployment (Railway)
+
+### Environment variables
+
+Set these in the Railway service **Variables** tab:
+
+| Variable | Required | Description |
+|---|---|---|
+| `SUPABASE_URL` | Yes | Your Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Service role key (bypasses RLS) |
+| `CRON_SECRET` | Recommended | Random secret to protect `/run-bots` |
+
+Generate a `CRON_SECRET`:
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+### Start command
+
+Railway picks this up automatically from `Procfile` and `railway.json`:
+```
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+### Scheduled bot execution (Railway Cron)
+
+Railway can trigger `/run-bots` on a schedule using a separate Cron service.
+
+**Recommended frequency:** every 15 minutes (`*/15 * * * *`).
+- Runs 96 times per day — enough signal for a paper trading demo
+- Avoids hammering Supabase with too many reads/writes
+- If no crossover fires on a given cycle, the bot simply holds with no DB writes
+
+**Setup steps:**
+
+1. In your Railway project, click **+ New** → **Empty Service**
+2. Go to **Settings** → **Service Type** → select **Cron Job**
+3. Set the **Schedule** to `*/15 * * * *`
+4. Set the **Command** to:
+   ```
+   curl -s -X POST https://<your-railway-domain>/run-bots \
+     -H "Authorization: Bearer $CRON_SECRET"
+   ```
+   Replace `<your-railway-domain>` with the public URL of your web service (e.g. `tradeforge-engine-production.up.railway.app`)
+5. In the Cron service **Variables** tab, add:
+   - `CRON_SECRET` — same value as in the web service
+
+That's it. The cron service calls `/run-bots` every 15 minutes; the web service validates the secret and runs the bot cycle.
+
+### Protecting `/run-bots`
+
+If `CRON_SECRET` is set, `/run-bots` requires:
+```
+Authorization: Bearer <your-secret>
+```
+
+If `CRON_SECRET` is not set, the endpoint is open (fine for local development).
+
+`GET /health` is always public and requires no authentication.
 
 ---
 

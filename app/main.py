@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, status
 from app.workers.bot_worker import run_all_bots
 from app.models.schemas import BotRunResult
+from app.config import settings
 
 app = FastAPI(
     title="TradeForge Engine",
@@ -15,10 +16,15 @@ def health() -> dict:
 
 
 @app.post("/run-bots", response_model=list[BotRunResult])
-def run_bots() -> list[BotRunResult]:
+def run_bots(authorization: str | None = Header(default=None)) -> list[BotRunResult]:
     """
-    Manually trigger a single worker cycle.
-    Fetches all active bots, runs strategies, applies risk checks,
-    executes paper trades, and logs everything to Supabase.
+    Trigger a single worker cycle.
+    If CRON_SECRET is configured, requires: Authorization: Bearer <secret>
     """
+    if settings.cron_secret:
+        if authorization != f"Bearer {settings.cron_secret}":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or missing Authorization header",
+            )
     return run_all_bots()
