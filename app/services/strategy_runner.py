@@ -19,7 +19,10 @@ def load_strategy(strategy_row: dict) -> BaseStrategy:
     """
     config: dict = strategy_row.get("config") or {}
     strategy_type: str = config.get("type", "ema-crossover").lower()
-    cls = _STRATEGY_REGISTRY.get(strategy_type, EMACrossoverStrategy)
+    cls = _STRATEGY_REGISTRY.get(strategy_type)
+    if cls is None:
+        print(f"[strategy_runner] unknown strategy type '{strategy_type}', falling back to EMA crossover")
+        cls = EMACrossoverStrategy
     return cls(config)
 
 

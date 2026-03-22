@@ -11,9 +11,6 @@ def check_risk(
     Validate a signal against the user's risk rules.
     Returns RiskCheckResult(allowed=False, reason=...) if any rule is violated.
     """
-    if signal.action == "hold":
-        return RiskCheckResult(allowed=False, reason="signal is hold")
-
     # No risk rules configured → allow all trades
     if not risk_rules:
         return RiskCheckResult(allowed=True, reason="no risk rules configured")

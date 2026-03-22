@@ -1,5 +1,5 @@
 from app.strategies.base_strategy import BaseStrategy
-from app.models.schemas import MarketData, Signal
+from app.models.schemas import MarketData, Signal, _DEFAULT_QUANTITY
 
 
 def _ema(prices: list[float], period: int) -> list[float]:
@@ -45,12 +45,14 @@ class EMACrossoverStrategy(BaseStrategy):
         prev_short, curr_short = short_ema[-2], short_ema[-1]
         prev_long,  curr_long  = long_ema[-2],  long_ema[-1]
 
+        qty = float(self.config.get("quantity") or _DEFAULT_QUANTITY.get(market_data.symbol, 0.01))
+
         if prev_short <= prev_long and curr_short > curr_long:
             return Signal(
                 action="buy",
                 symbol=market_data.symbol,
                 price=market_data.price,
-                quantity=float(self.config.get("quantity", 1.0)),
+                quantity=qty,
                 reason=f"EMA{self.short_period} crossed above EMA{self.long_period}",
             )
 
@@ -59,7 +61,7 @@ class EMACrossoverStrategy(BaseStrategy):
                 action="sell",
                 symbol=market_data.symbol,
                 price=market_data.price,
-                quantity=float(self.config.get("quantity", 1.0)),
+                quantity=qty,
                 reason=f"EMA{self.short_period} crossed below EMA{self.long_period}",
             )
 

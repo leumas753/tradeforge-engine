@@ -10,12 +10,12 @@ supabase: Client = create_client(
 
 
 def fetch_active_bots() -> list[dict]:
-    """Fetch all bot_instances with status 'running', including their strategy."""
+    """Fetch all bot_instances with status 'active', including their strategy."""
     res = (
         supabase
         .from_("bot_instances")
         .select("*, strategies(*)")
-        .eq("status", "running")
+        .eq("status", "active")
         .execute()
     )
     return res.data
@@ -68,11 +68,6 @@ def insert_trade(trade: dict) -> dict:
     res = supabase.from_("trades").insert(trade).execute()
     return res.data[0]
 
-
-def update_trade(trade_id: str, updates: dict) -> dict:
-    """Update an existing trade row."""
-    res = supabase.from_("trades").update(updates).eq("id", trade_id).execute()
-    return res.data[0]
 
 
 def insert_log(log: dict) -> None:

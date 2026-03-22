@@ -17,16 +17,14 @@ def execute_paper_trade(
     """
     now = datetime.now(timezone.utc).isoformat()
 
-    # Simulate a slight price movement for exit (±0.5% to ±2%)
-    slippage = random.uniform(0.005, 0.02)
-    if signal.action == "buy":
-        exit_price = round(signal.price * (1 + slippage), 4)
-    else:
-        exit_price = round(signal.price * (1 - slippage), 4)
+    # Simulate a realistic exit: price moves ±0.5% to ±2% randomly (win or lose)
+    move = random.uniform(-0.02, 0.02)
+    exit_price = round(signal.price * (1 + move), 4)
 
-    pnl = round((exit_price - signal.price) * signal.quantity, 4)
-    if signal.action == "sell":
-        pnl = -pnl  # selling profits when price goes down
+    if signal.action == "buy":
+        pnl = round((exit_price - signal.price) * signal.quantity, 4)
+    else:
+        pnl = round((signal.price - exit_price) * signal.quantity, 4)
 
     trade_payload = {
         "user_id": user_id,
