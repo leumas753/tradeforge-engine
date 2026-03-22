@@ -3,6 +3,8 @@ from app.workers.bot_worker import run_all_bots
 from app.models.schemas import BotRunResult
 from app.config import settings
 
+print("[startup] TradeForge Engine starting...")
+
 app = FastAPI(
     title="TradeForge Engine",
     description="Paper trading backend for the TradeForge system.",
